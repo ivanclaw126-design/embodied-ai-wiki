@@ -6,7 +6,7 @@ import process from "node:process"
 const quartzRoot = path.resolve(import.meta.dirname, "..")
 const vaultRoot = path.resolve(quartzRoot, "..")
 const contentRoot = path.join(quartzRoot, "content")
-const includeRaw = process.argv.includes("--include-raw") || process.env.QUARTZ_INCLUDE_RAW === "1"
+const includeRaw = !process.argv.includes("--wiki-only") && process.env.QUARTZ_INCLUDE_RAW !== "0"
 
 const excludedNames = new Set([
   ".DS_Store",

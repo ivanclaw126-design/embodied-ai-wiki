@@ -71,10 +71,14 @@ const hiddenGraphPathPrefixes = [
 ]
 const hiddenGraphSlugs = new Set([
   "index",
+  "wiki",
+  "wiki/",
   "wiki/index",
   "wiki/log",
   "wiki/log_archive",
   "wiki/overview",
+  "lineages/中国具身智能公司代际谱系",
+  "wiki/lineages/中国具身智能公司代际谱系",
 ])
 
 function isHiddenGraphNode(id: SimpleSlug) {
