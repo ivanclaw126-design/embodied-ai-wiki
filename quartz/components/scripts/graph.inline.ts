@@ -53,6 +53,45 @@ type NodeRenderData = GraphicsInfo & {
 }
 
 const localStorageKey = "graph-visited"
+const graphNodeColors = {
+  companies: "#374151",
+  people: "#2563eb",
+  institutions: "#dc2626",
+  lineages: "#16a34a",
+  fallback: "#9ca3af",
+}
+const hiddenGraphPathPrefixes = [
+  "raw/",
+  "wiki/questions/",
+  "wiki/relationships/",
+  "wiki/sources/",
+  "wiki/synthesis/",
+  "wiki/technologies/",
+  "wiki/comparisons/",
+]
+const hiddenGraphSlugs = new Set([
+  "index",
+  "wiki/index",
+  "wiki/log",
+  "wiki/log_archive",
+  "wiki/overview",
+])
+
+function isHiddenGraphNode(id: SimpleSlug) {
+  if (id.startsWith("tags/")) return true
+  if (hiddenGraphSlugs.has(id)) return true
+  if (id.endsWith("/index")) return true
+  return hiddenGraphPathPrefixes.some((prefix) => id.startsWith(prefix))
+}
+
+function graphNodeColor(id: SimpleSlug) {
+  if (id.startsWith("wiki/companies/")) return graphNodeColors.companies
+  if (id.startsWith("wiki/people/")) return graphNodeColors.people
+  if (id.startsWith("wiki/institutions/")) return graphNodeColors.institutions
+  if (id.startsWith("wiki/lineages/")) return graphNodeColors.lineages
+  return graphNodeColors.fallback
+}
+
 function getVisited(): Set<SimpleSlug> {
   return new Set(JSON.parse(localStorage.getItem(localStorageKey) ?? "[]"))
 }
@@ -70,7 +109,6 @@ type TweenNode = {
 
 async function renderGraph(graph: HTMLElement, fullSlug: FullSlug) {
   const slug = simplifySlug(fullSlug)
-  const visited = getVisited()
   removeAllChildren(graph)
 
   let {
@@ -101,10 +139,12 @@ async function renderGraph(graph: HTMLElement, fullSlug: FullSlug) {
 
   const tweens = new Map<string, TweenNode>()
   for (const [source, details] of data.entries()) {
+    if (isHiddenGraphNode(source)) continue
+
     const outgoing = details.links ?? []
 
     for (const dest of outgoing) {
-      if (validLinks.has(dest)) {
+      if (validLinks.has(dest) && !isHiddenGraphNode(dest)) {
         links.push({ source: source, target: dest })
       }
     }
@@ -139,11 +179,17 @@ async function renderGraph(graph: HTMLElement, fullSlug: FullSlug) {
       }
     }
   } else {
-    validLinks.forEach((id) => neighbourhood.add(id))
-    if (showTags) tags.forEach((tag) => neighbourhood.add(tag))
+    validLinks.forEach((id) => {
+      if (!isHiddenGraphNode(id)) neighbourhood.add(id)
+    })
+    if (showTags) {
+      tags.forEach((tag) => {
+        if (!isHiddenGraphNode(tag)) neighbourhood.add(tag)
+      })
+    }
   }
 
-  const nodes = [...neighbourhood].map((url) => {
+  const nodes = [...neighbourhood].filter((url) => !isHiddenGraphNode(url)).map((url) => {
     const text = url.startsWith("tags/") ? "#" + url.substring(5) : (data.get(url)?.title ?? url)
     return {
       id: url,
@@ -154,7 +200,13 @@ async function renderGraph(graph: HTMLElement, fullSlug: FullSlug) {
   const graphData: { nodes: NodeData[]; links: LinkData[] } = {
     nodes,
     links: links
-      .filter((l) => neighbourhood.has(l.source) && neighbourhood.has(l.target))
+      .filter(
+        (l) =>
+          neighbourhood.has(l.source) &&
+          neighbourhood.has(l.target) &&
+          !isHiddenGraphNode(l.source) &&
+          !isHiddenGraphNode(l.target),
+      )
       .map((l) => ({
         source: nodes.find((n) => n.id === l.source)!,
         target: nodes.find((n) => n.id === l.target)!,
@@ -195,14 +247,7 @@ async function renderGraph(graph: HTMLElement, fullSlug: FullSlug) {
 
   // calculate color
   const color = (d: NodeData) => {
-    const isCurrent = d.id === slug
-    if (isCurrent) {
-      return computedStyleMap["--secondary"]
-    } else if (visited.has(d.id) || d.id.startsWith("tags/")) {
-      return computedStyleMap["--tertiary"]
-    } else {
-      return computedStyleMap["--gray"]
-    }
+    return graphNodeColor(d.id)
   }
 
   function nodeRadius(d: NodeData) {
