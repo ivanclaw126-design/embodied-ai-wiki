@@ -59,6 +59,7 @@ async function writeHomePage() {
   const rawNote = includeRaw
     ? "本次发布包含 `raw/` 原始资料，站内 `Raw:` 证据链接可直接打开。"
     : "本次发布默认只包含 `wiki/` 编译知识层；`Raw:` 证据链接仍保留为研究线索，但不会在公开站点中展开原始资料。"
+  const rawEntry = includeRaw ? "- [原始资料](raw/)\n" : ""
 
   const body = `---
 title: 具身智能研究知识库
@@ -78,6 +79,7 @@ ${rawNote}
 - [人物与机构](wiki/people/)
 - [谱系分析](wiki/lineages/)
 - [开放问题](wiki/questions/)
+${rawEntry}
 `
 
   await fs.writeFile(path.join(contentRoot, "index.md"), body)
