@@ -1,6 +1,22 @@
 import { PageLayout, SharedLayout } from "./quartz/cfg"
 import * as Component from "./quartz/components"
 
+const localGraph = Component.Graph({
+  localGraph: {
+    showTags: false,
+  },
+  globalGraph: {
+    showTags: false,
+  },
+})
+
+const globalGraphPreview = Component.Graph({
+  globalGraphPreview: true,
+  globalGraph: {
+    showTags: false,
+  },
+})
+
 // components shared across all pages
 export const sharedPageComponents: SharedLayout = {
   head: Component.Head(),
@@ -37,16 +53,17 @@ export const defaultContentPageLayout: PageLayout = {
         { Component: Component.ReaderMode() },
       ],
     }),
+    Component.HomeButton(),
     Component.Explorer(),
   ],
   right: [
-    Component.Graph({
-      localGraph: {
-        showTags: false,
-      },
-      globalGraph: {
-        showTags: false,
-      },
+    Component.ConditionalRender({
+      component: globalGraphPreview,
+      condition: (page) => page.fileData.slug === "index",
+    }),
+    Component.ConditionalRender({
+      component: localGraph,
+      condition: (page) => page.fileData.slug !== "index",
     }),
     Component.DesktopOnly(Component.TableOfContents()),
     Component.Backlinks(),
@@ -68,7 +85,8 @@ export const defaultListPageLayout: PageLayout = {
         { Component: Component.Darkmode() },
       ],
     }),
+    Component.HomeButton(),
     Component.Explorer(),
   ],
-  right: [],
+  right: [globalGraphPreview],
 }

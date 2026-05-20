@@ -31,6 +31,12 @@ type NodeData = {
   id: SimpleSlug
   text: string
   tags: string[]
+  __initialDragPos?: {
+    x: number
+    y: number
+    fx: number | null | undefined
+    fy: number | null | undefined
+  }
 } & SimulationNodeDatum
 
 type SimpleLinkData = {
@@ -53,6 +59,8 @@ type NodeRenderData = GraphicsInfo & {
 }
 
 const localStorageKey = "graph-visited"
+const graphVisualSettingsKey = "graph-visual-settings"
+const graphVisualControlsCollapsedKey = "graph-visual-controls-collapsed"
 const graphNodeColors = {
   companies: "#374151",
   people: "#2563eb",
@@ -111,6 +119,48 @@ type TweenNode = {
   stop: () => void
 }
 
+type GraphVisualSettings = {
+  fontSize: number
+  labelOpacity: number
+  opacityScale: number
+  linkOpacity: number
+  linkThickness: number
+}
+
+const defaultGraphVisualSettings: GraphVisualSettings = {
+  fontSize: 0.45,
+  labelOpacity: 0.65,
+  opacityScale: 2.7,
+  linkOpacity: 1,
+  linkThickness: 1.1,
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function readGraphVisualSettings(): GraphVisualSettings {
+  const parsed = JSON.parse(
+    localStorage.getItem(graphVisualSettingsKey) ?? "{}",
+  ) as Partial<GraphVisualSettings>
+
+  return {
+    fontSize: clamp(parsed.fontSize ?? defaultGraphVisualSettings.fontSize, 0.35, 1.4),
+    labelOpacity: clamp(parsed.labelOpacity ?? defaultGraphVisualSettings.labelOpacity, 0.1, 1),
+    opacityScale: clamp(parsed.opacityScale ?? defaultGraphVisualSettings.opacityScale, 0.2, 4),
+    linkOpacity: clamp(parsed.linkOpacity ?? defaultGraphVisualSettings.linkOpacity, 0.05, 1),
+    linkThickness: clamp(parsed.linkThickness ?? defaultGraphVisualSettings.linkThickness, 0.3, 4),
+  }
+}
+
+function writeGraphVisualSettings(settings: GraphVisualSettings) {
+  localStorage.setItem(graphVisualSettingsKey, JSON.stringify(settings))
+}
+
+function emitGraphVisualSettings(settings: GraphVisualSettings) {
+  document.dispatchEvent(new CustomEvent("graphvisualsettingschange", { detail: settings }))
+}
+
 async function renderGraph(graph: HTMLElement, fullSlug: FullSlug) {
   const slug = simplifySlug(fullSlug)
   removeAllChildren(graph)
@@ -129,7 +179,17 @@ async function renderGraph(graph: HTMLElement, fullSlug: FullSlug) {
     showTags,
     focusOnHover,
     enableRadial,
+    enableNavigation = true,
+    labelOpacity = 1,
+    linkOpacity = 1,
+    linkThickness = 1,
   } = JSON.parse(graph.dataset["cfg"]!) as D3Config
+  const savedVisualSettings = readGraphVisualSettings()
+  fontSize = savedVisualSettings.fontSize
+  labelOpacity = savedVisualSettings.labelOpacity
+  opacityScale = savedVisualSettings.opacityScale
+  linkOpacity = savedVisualSettings.linkOpacity
+  linkThickness = savedVisualSettings.linkThickness
 
   const data: Map<SimpleSlug, ContentDetails> = new Map(
     Object.entries<ContentDetails>(await fetchData).map(([k, v]) => [
@@ -193,14 +253,16 @@ async function renderGraph(graph: HTMLElement, fullSlug: FullSlug) {
     }
   }
 
-  const nodes = [...neighbourhood].filter((url) => !isHiddenGraphNode(url)).map((url) => {
-    const text = url.startsWith("tags/") ? "#" + url.substring(5) : (data.get(url)?.title ?? url)
-    return {
-      id: url,
-      text,
-      tags: data.get(url)?.tags ?? [],
-    }
-  })
+  const nodes = [...neighbourhood]
+    .filter((url) => !isHiddenGraphNode(url))
+    .map((url) => {
+      const text = url.startsWith("tags/") ? "#" + url.substring(5) : (data.get(url)?.title ?? url)
+      return {
+        id: url,
+        text,
+        tags: data.get(url)?.tags ?? [],
+      }
+    })
   const graphData: { nodes: NodeData[]; links: LinkData[] } = {
     nodes,
     links: links
@@ -296,7 +358,16 @@ async function renderGraph(graph: HTMLElement, fullSlug: FullSlug) {
   }
 
   let dragStartTime = 0
+  let dragStartPointer = { x: 0, y: 0 }
+  let maxDragDistance = 0
   let dragging = false
+  let currentTransform = zoomIdentity
+  const clickDragTolerance = 5
+
+  function zoomLabelOpacity() {
+    const scaleOpacity = Math.max((currentTransform.k * opacityScale - 1) / 3.75, 0)
+    return clamp(scaleOpacity * labelOpacity, 0, labelOpacity)
+  }
 
   function renderLinks() {
     tweens.get("link")?.stop()
@@ -337,7 +408,7 @@ async function renderGraph(graph: HTMLElement, fullSlug: FullSlug) {
         tweenGroup.add(
           new Tweened<Text>(n.label).to(
             {
-              alpha: 1,
+              alpha: labelOpacity,
               scale: { x: activeScale, y: activeScale },
             },
             100,
@@ -347,7 +418,7 @@ async function renderGraph(graph: HTMLElement, fullSlug: FullSlug) {
         tweenGroup.add(
           new Tweened<Text>(n.label).to(
             {
-              alpha: n.label.alpha,
+              alpha: Math.min(n.label.alpha, labelOpacity),
               scale: { x: defaultScale, y: defaultScale },
             },
             100,
@@ -428,7 +499,7 @@ async function renderGraph(graph: HTMLElement, fullSlug: FullSlug) {
       eventMode: "none",
       text: n.text,
       alpha: 0,
-      anchor: { x: 0.5, y: 1.2 },
+      anchor: { x: 0.5, y: 0 },
       style: {
         fontSize: fontSize * 15,
         fill: computedStyleMap["--dark"],
@@ -498,8 +569,7 @@ async function renderGraph(graph: HTMLElement, fullSlug: FullSlug) {
     linkRenderData.push(linkRenderDatum)
   }
 
-  let currentTransform = zoomIdentity
-  if (enableDrag) {
+  if (enableNavigation && enableDrag) {
     select<HTMLCanvasElement, NodeData | undefined>(app.canvas).call(
       drag<HTMLCanvasElement, NodeData | undefined>()
         .container(() => app.canvas)
@@ -515,12 +585,18 @@ async function renderGraph(graph: HTMLElement, fullSlug: FullSlug) {
             fy: event.subject.fy,
           }
           dragStartTime = Date.now()
+          dragStartPointer = { x: event.x, y: event.y }
+          maxDragDistance = 0
           dragging = true
         })
         .on("drag", function dragged(event) {
           const initPos = event.subject.__initialDragPos
           event.subject.fx = initPos.x + (event.x - initPos.x) / currentTransform.k
           event.subject.fy = initPos.y + (event.y - initPos.y) / currentTransform.k
+          maxDragDistance = Math.max(
+            maxDragDistance,
+            Math.hypot(event.x - dragStartPointer.x, event.y - dragStartPointer.y),
+          )
         })
         .on("end", function dragended(event) {
           if (!event.active) simulation.alphaTarget(0)
@@ -528,15 +604,15 @@ async function renderGraph(graph: HTMLElement, fullSlug: FullSlug) {
           event.subject.fy = null
           dragging = false
 
-          // if the time between mousedown and mouseup is short, we consider it a click
-          if (Date.now() - dragStartTime < 500) {
+          // Treat only short, near-stationary presses as navigation clicks.
+          if (Date.now() - dragStartTime < 500 && maxDragDistance <= clickDragTolerance) {
             const node = graphData.nodes.find((n) => n.id === event.subject.id) as NodeData
             const targ = resolveRelative(fullSlug, node.id)
             window.spaNavigate(new URL(targ, window.location.toString()))
           }
         }),
     )
-  } else {
+  } else if (enableNavigation) {
     for (const node of nodeRenderData) {
       node.gfx.on("click", () => {
         const targ = resolveRelative(fullSlug, node.simulationData.id)
@@ -559,8 +635,7 @@ async function renderGraph(graph: HTMLElement, fullSlug: FullSlug) {
           stage.position.set(transform.x, transform.y)
 
           // zoom adjusts opacity of labels too
-          const scale = transform.k * opacityScale
-          let scaleOpacity = Math.max((scale - 1) / 3.75, 0)
+          let scaleOpacity = zoomLabelOpacity()
           const activeNodes = nodeRenderData.filter((n) => n.active).flatMap((n) => n.label)
 
           for (const label of labelsContainer.children) {
@@ -572,15 +647,41 @@ async function renderGraph(graph: HTMLElement, fullSlug: FullSlug) {
     )
   }
 
+  function applyVisualSettings(settings: GraphVisualSettings) {
+    fontSize = settings.fontSize
+    labelOpacity = settings.labelOpacity
+    opacityScale = settings.opacityScale
+    linkOpacity = settings.linkOpacity
+    linkThickness = settings.linkThickness
+
+    const defaultScale = 1 / scale
+    const activeScale = defaultScale * 1.1
+    const activeNodes = nodeRenderData.filter((n) => n.active).flatMap((n) => n.label)
+    for (const node of nodeRenderData) {
+      node.label.style.fontSize = fontSize * 15
+      node.label.scale.set(hoveredNodeId === node.simulationData.id ? activeScale : defaultScale)
+      node.label.alpha = activeNodes.includes(node.label) ? labelOpacity : zoomLabelOpacity()
+    }
+    renderLinks()
+  }
+
+  const handleVisualSettingsChange = (event: Event) => {
+    applyVisualSettings((event as CustomEvent<GraphVisualSettings>).detail)
+  }
+  document.addEventListener("graphvisualsettingschange", handleVisualSettingsChange)
+
   let stopAnimation = false
   function animate(time: number) {
     if (stopAnimation) return
     for (const n of nodeRenderData) {
       const { x, y } = n.simulationData
       if (!x || !y) continue
-      n.gfx.position.set(x + width / 2, y + height / 2)
+      const nodeX = x + width / 2
+      const nodeY = y + height / 2
+      n.gfx.position.set(nodeX, nodeY)
       if (n.label) {
-        n.label.position.set(x + width / 2, y + height / 2)
+        const labelOffset = nodeRadius(n.simulationData) + 4
+        n.label.position.set(nodeX, nodeY + labelOffset)
       }
     }
 
@@ -590,7 +691,7 @@ async function renderGraph(graph: HTMLElement, fullSlug: FullSlug) {
       l.gfx.moveTo(linkData.source.x! + width / 2, linkData.source.y! + height / 2)
       l.gfx
         .lineTo(linkData.target.x! + width / 2, linkData.target.y! + height / 2)
-        .stroke({ alpha: l.alpha, width: 1, color: l.color })
+        .stroke({ alpha: l.alpha * linkOpacity, width: linkThickness, color: l.color })
     }
 
     tweens.forEach((t) => t.update(time))
@@ -601,6 +702,7 @@ async function renderGraph(graph: HTMLElement, fullSlug: FullSlug) {
   requestAnimationFrame(animate)
   return () => {
     stopAnimation = true
+    document.removeEventListener("graphvisualsettingschange", handleVisualSettingsChange)
     app.destroy()
   }
 }
@@ -625,6 +727,66 @@ function cleanupGlobalGraphs() {
 document.addEventListener("nav", async (e: CustomEventMap["nav"]) => {
   const slug = e.detail.url
   addToVisited(simplifySlug(slug))
+
+  const graphControlContainers = [
+    ...document.getElementsByClassName("global-graph-outer"),
+  ] as HTMLElement[]
+  const graphControls = [...document.querySelectorAll<HTMLInputElement>("[data-graph-control]")]
+  const graphResetButtons = [...document.getElementsByClassName("global-graph-reset")]
+  const graphCollapseButtons = [
+    ...document.getElementsByClassName("global-graph-controls-collapse"),
+  ]
+  const graphGearButtons = [...document.getElementsByClassName("global-graph-controls-gear")]
+
+  function syncGraphControls(settings: GraphVisualSettings) {
+    for (const control of graphControls) {
+      const key = control.dataset.graphControl as keyof GraphVisualSettings
+      control.value = String(settings[key])
+    }
+  }
+
+  function setGraphControlsCollapsed(collapsed: boolean) {
+    localStorage.setItem(graphVisualControlsCollapsedKey, String(collapsed))
+    for (const container of graphControlContainers) {
+      container.classList.toggle("controls-collapsed", collapsed)
+    }
+  }
+
+  syncGraphControls(readGraphVisualSettings())
+  setGraphControlsCollapsed(localStorage.getItem(graphVisualControlsCollapsedKey) === "true")
+
+  const handleGraphControlInput = (event: Event) => {
+    const control = event.currentTarget as HTMLInputElement
+    const key = control.dataset.graphControl as keyof GraphVisualSettings
+    const settings = readGraphVisualSettings()
+    settings[key] = Number(control.value)
+    writeGraphVisualSettings(settings)
+    syncGraphControls(settings)
+    emitGraphVisualSettings(settings)
+  }
+  for (const control of graphControls) {
+    control.addEventListener("input", handleGraphControlInput)
+  }
+
+  const handleGraphReset = () => {
+    const settings = { ...defaultGraphVisualSettings }
+    writeGraphVisualSettings(settings)
+    syncGraphControls(settings)
+    emitGraphVisualSettings(settings)
+  }
+  for (const button of graphResetButtons) {
+    button.addEventListener("click", handleGraphReset)
+  }
+
+  const handleGraphCollapse = () => setGraphControlsCollapsed(true)
+  for (const button of graphCollapseButtons) {
+    button.addEventListener("click", handleGraphCollapse)
+  }
+
+  const handleGraphExpand = () => setGraphControlsCollapsed(false)
+  for (const button of graphGearButtons) {
+    button.addEventListener("click", handleGraphExpand)
+  }
 
   async function renderLocalGraph() {
     cleanupLocalGraphs()
@@ -683,15 +845,59 @@ document.addEventListener("nav", async (e: CustomEventMap["nav"]) => {
     }
   }
 
+  const openGlobalGraphFromIcon = (event: Event) => {
+    event.stopPropagation()
+    void renderGlobalGraph()
+  }
+
   const containerIcons = document.getElementsByClassName("global-graph-icon")
   Array.from(containerIcons).forEach((icon) => {
-    icon.addEventListener("click", renderGlobalGraph)
-    window.addCleanup(() => icon.removeEventListener("click", renderGlobalGraph))
+    icon.addEventListener("click", openGlobalGraphFromIcon)
+    window.addCleanup(() => icon.removeEventListener("click", openGlobalGraphFromIcon))
+  })
+
+  const graphEntries = document.getElementsByClassName("global-graph-entry")
+  const openGlobalGraphFromEntry = () => {
+    void renderGlobalGraph()
+  }
+  const openGlobalGraphFromEntryKeyboard = (event: Event) => {
+    const keyboardEvent = event as KeyboardEvent
+    if (keyboardEvent.key === "Enter" || keyboardEvent.key === " ") {
+      event.preventDefault()
+      void renderGlobalGraph()
+    }
+  }
+
+  Array.from(graphEntries).forEach((entry) => {
+    entry.addEventListener("click", openGlobalGraphFromEntry)
+    entry.addEventListener("keydown", openGlobalGraphFromEntryKeyboard)
+    window.addCleanup(() => {
+      entry.removeEventListener("click", openGlobalGraphFromEntry)
+      entry.removeEventListener("keydown", openGlobalGraphFromEntryKeyboard)
+    })
+  })
+
+  const closeButtons = document.getElementsByClassName("global-graph-close")
+  Array.from(closeButtons).forEach((button) => {
+    button.addEventListener("click", hideGlobalGraph)
+    window.addCleanup(() => button.removeEventListener("click", hideGlobalGraph))
   })
 
   document.addEventListener("keydown", shortcutHandler)
   window.addCleanup(() => {
     document.removeEventListener("keydown", shortcutHandler)
+    for (const control of graphControls) {
+      control.removeEventListener("input", handleGraphControlInput)
+    }
+    for (const button of graphResetButtons) {
+      button.removeEventListener("click", handleGraphReset)
+    }
+    for (const button of graphCollapseButtons) {
+      button.removeEventListener("click", handleGraphCollapse)
+    }
+    for (const button of graphGearButtons) {
+      button.removeEventListener("click", handleGraphExpand)
+    }
     cleanupLocalGraphs()
     cleanupGlobalGraphs()
   })

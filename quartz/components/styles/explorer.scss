@@ -128,8 +128,14 @@ button.desktop-explorer {
 
     & li > a {
       color: var(--dark);
+      display: block;
+      font-size: 0.82rem;
+      line-height: 1.25rem;
+      overflow: hidden;
       opacity: 0.75;
       pointer-events: all;
+      text-overflow: ellipsis;
+      white-space: nowrap;
 
       &.active {
         opacity: 1;
@@ -166,13 +172,22 @@ button.desktop-explorer {
   align-items: center;
   user-select: none;
 
+  & div {
+    flex: 1 1 auto;
+    max-width: 100%;
+    min-width: 0;
+  }
+
   & div > a {
     color: var(--secondary);
     font-family: var(--headerFont);
-    font-size: 0.95rem;
+    font-size: 0.86rem;
     font-weight: $semiBoldWeight;
-    line-height: 1.5rem;
-    display: inline-block;
+    line-height: 1.3rem;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   & div > a:hover {
@@ -190,15 +205,21 @@ button.desktop-explorer {
     display: flex;
     align-items: center;
     font-family: var(--headerFont);
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
 
     & span {
-      font-size: 0.95rem;
+      font-size: 0.86rem;
       display: inline-block;
       color: var(--secondary);
       font-weight: $semiBoldWeight;
       margin: 0;
-      line-height: 1.5rem;
+      line-height: 1.3rem;
+      overflow: hidden;
       pointer-events: none;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 }
