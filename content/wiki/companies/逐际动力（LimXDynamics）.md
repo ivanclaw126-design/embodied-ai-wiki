@@ -4,14 +4,14 @@ title: 逐际动力（LimX Dynamics）
 aliases: [逐际动力, LimX Dynamics, 深圳逐际动力科技股份有限公司, 深圳逐际动力科技有限公司, CL-1, CL-2, W1, TRON 1, TRON 2, LimX Oli, LimX VGM]
 tags: [company, embodied-ai, humanoid-robotics, bipedal-robot, legged-robot]
 created: 2026-05-18
-updated: 2026-05-18
+updated: 2026-05-20
 status: tracking
 ---
 
 # 逐际动力（LimX Dynamics）
 
-> Sources: 本地横纵分析报告, 2026-05-18; 知乎专栏清华系盘点, 2025-03-23
-> Raw: [逐际动力横纵分析报告](../../raw/sources/2026-05-18-逐际动力-横纵分析报告.md); [知乎清华系盘点](../../raw/sources/2025-03-23-盘点一些国内清华系的具身智能创业公司.md)
+> Sources: 本地横纵分析报告, 2026-05-18; 知乎专栏清华系盘点, 2025-03-23; 国内具身智能公司与 NVIDIA 深度合作公开证据整理, 2026-05-20
+> Raw: [逐际动力横纵分析报告](../../raw/sources/2026-05-18-逐际动力-横纵分析报告.md); [知乎清华系盘点](../../raw/sources/2025-03-23-盘点一些国内清华系的具身智能创业公司.md); [国内具身智能公司与 NVIDIA 深度合作公开证据整理](../../raw/sources/2026-05-20-国内具身智能公司与nvidia深度合作公开证据整理.md)
 
 ## Overview
 
@@ -21,6 +21,7 @@ status: tracking
 
 | 判断 | source | date | entity | evidence_level |
 |---|---|---:|---|---|
+| NVIDIA Developer 中文技术博客和 Newsroom 早期接入名单包含 LimX Dynamics；当前写为 Humanoid Robot Developer Program / Isaac Lab 生态进入证据，不等同产品级深度合作。 | 国内具身智能公司与 NVIDIA 深度合作公开证据整理 | 2026-05-20 | 逐际动力 / NVIDIA | S 级来源整理 |
 | 2026 年纽氏达特招股说明书把“深圳逐际动力科技股份有限公司”列为客户，工商聚合数据也指向同一统一社会信用代码已更名，当前采用股份公司口径。 | 逐际动力报告 | 2026-05-18 | 逐际动力主体 | L1/L3 |
 | 公司源自南方科技大学机器人团队，张巍教授研究方向覆盖仿人机器人、足式机器人和智能机器人系统。 | 逐际动力报告 | 2026-05-18 | 张巍/南方科技大学 | L1/L2 |
 | 产品路线从 W1、CL-1、TRON 1 到 Oli、TRON 2 和 FluxVLA Engine，体现“高动态移动本体 + VLA 工程平台”的延展。 | 逐际动力报告 | 2026-05-18 | 逐际产品线 | L1 |

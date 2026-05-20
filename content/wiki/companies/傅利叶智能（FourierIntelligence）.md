@@ -4,14 +4,14 @@ title: 傅利叶智能（Fourier Intelligence）
 aliases: [傅利叶智能, Fourier Intelligence, 上海傅利叶智能科技股份有限公司, 上海傅利叶智能科技有限公司, Fourier GR-1, Fourier GR-2]
 tags: [company, embodied-ai, humanoid-robot, rehabilitation-robotics, robot-body]
 created: 2026-05-18
-updated: 2026-05-18
+updated: 2026-05-20
 status: tracking
 ---
 
 # 傅利叶智能（Fourier Intelligence）
 
-> Sources: 傅利叶智能横纵分析报告, 2026-05-17
-> Raw: [傅利叶智能横纵分析报告](../../raw/sources/2026-05-17-傅利叶智能-fourier-intelligence-横纵分析报告.md)
+> Sources: 傅利叶智能横纵分析报告, 2026-05-17; 国内具身智能公司与 NVIDIA 深度合作公开证据整理, 2026-05-20
+> Raw: [傅利叶智能横纵分析报告](../../raw/sources/2026-05-17-傅利叶智能-fourier-intelligence-横纵分析报告.md); [国内具身智能公司与 NVIDIA 深度合作公开证据整理](../../raw/sources/2026-05-20-国内具身智能公司与nvidia深度合作公开证据整理.md)
 
 ## Overview
 
@@ -21,6 +21,7 @@ status: tracking
 
 | 判断 | source | date | entity | evidence_level |
 |---|---|---:|---|---|
+| NVIDIA 官方材料披露傅利叶 GR-3 使用 Isaac Lab 和 Jetson AGX，Developer 案例披露 Fourier 使用 Isaac Gym 开发/测试 GR-2 并迁移到 Isaac Lab；当前评为 NVIDIA 人形机器人仿真训练栈典型样本。 | 国内具身智能公司与 NVIDIA 深度合作公开证据整理 | 2026-05-20 | 傅利叶智能 / NVIDIA | S 级来源整理 |
 | 傅利叶的差异化来自康复机器人历史沉淀：人体运动、安全力控、机构可靠性、专业机构渠道和国际化品牌，而非纯 AI-native 具身大脑叙事。 | 傅利叶智能横纵分析报告 | 2026-05-17 | 傅利叶智能 | A/B/C |
 | 2025 年润阳科技公告披露 E3 轮拟增资 3 亿元、投前估值 80 亿元，并给出 2024 年收入约 1.43 亿元、净利润约 -2.03 亿元，是当前最强资本市场证据之一。 | 傅利叶智能横纵分析报告 | 2026-05-17 | E3 轮/财务口径 | A |
 | 官网称 2025 年 E 系列融资合计近 8 亿元，但 E 系列、E3 轮完整投资方和交割状态不能由单一公告机械外推。 | 傅利叶智能横纵分析报告 | 2026-05-17 | 融资口径 | A |

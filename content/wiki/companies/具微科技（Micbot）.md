@@ -70,7 +70,7 @@ status: tracking
 
 ## See Also
 
-- [国内具身智能公司观察池](../comparisons/国内具身智能公司观察池.md)
+- [国内具身智能公司业务类型分类](国内具身智能公司业务类型分类.md)
 - [产业资本投资关系](../relationships/产业资本投资关系.md)
 - [机器人公司客户合作关系](../relationships/机器人公司客户合作关系.md)
 - [高校-公司合作](../relationships/高校-公司合作.md)
