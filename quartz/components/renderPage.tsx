@@ -23,12 +23,15 @@ interface RenderComponents {
 }
 
 const headerRegex = new RegExp(/h[1-6]/)
+const contentIndexVersion =
+  process.env.GITHUB_SHA ?? process.env.VERCEL_GIT_COMMIT_SHA ?? Date.now().toString()
+
 export function pageResources(
   baseDir: FullSlug | RelativeURL,
   staticResources: StaticResources,
 ): StaticResources {
   const contentIndexPath = joinSegments(baseDir, "static/contentIndex.json")
-  const contentIndexScript = `const fetchData = fetch("${contentIndexPath}").then(data => data.json())`
+  const contentIndexScript = `const fetchData = fetch("${contentIndexPath}?v=${contentIndexVersion}").then(data => data.json())`
 
   const resources: StaticResources = {
     css: [
