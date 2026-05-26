@@ -1,7 +1,7 @@
 import { QuartzConfig } from "./quartz/cfg"
 import * as Plugin from "./quartz/plugins"
 
-const baseUrl = process.env.QUARTZ_BASE_URL ?? "ivanclaw126-design.github.io/embodied-ai-wiki"
+const baseUrl = process.env.QUARTZ_BASE_URL ?? "temp.eai.ootoday.top"
 
 /**
  * Quartz 4 Configuration

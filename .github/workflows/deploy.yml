@@ -30,7 +30,7 @@ jobs:
       - name: Build Quartz
         run: npx quartz build
         env:
-          QUARTZ_BASE_URL: ${{ vars.QUARTZ_BASE_URL || 'ivanclaw126-design.github.io/embodied-ai-wiki' }}
+          QUARTZ_BASE_URL: ${{ vars.QUARTZ_BASE_URL || 'temp.eai.ootoday.top' }}
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
